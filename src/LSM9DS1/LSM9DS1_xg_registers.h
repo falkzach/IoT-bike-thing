@@ -1,15 +1,15 @@
 /*
- *	LSM9DS1 Accelerometer and gyroscope register address map
- *	Source: Table 21.
- *	https://cdn.sparkfun.com/assets/learn_tutorials/3/7/3/LSM9DS1_Datasheet.pdf
- *
- *
  *	Note: regex for defines from pdf copy pasta
  *	([A-Z0-9_]*)\s(?:[a-z/\-]*)\s([A-F0-9]*)\s.(?:[0-1]*)\s.*
  */
 
- #define GAS_ADDR 0x6B
- #define GAS_WAI 0x0F
+/*
+ *	LSM9DS1 Accelerometer and gyroscope register address map
+ *	Source: Table 21.
+ *	https://cdn.sparkfun.com/assets/learn_tutorials/3/7/3/LSM9DS1_Datasheet.pdf
+ */
+
+ #define XG_ADDR 0x6B
 
 #define ACT_THS 0x04
 #define ACT_DUR 0x05
