@@ -92,9 +92,9 @@ void read_gps(uint8_t *line) {
 
 // init for the GP-20u7 gps
 void gps_init() {
-	
+
 	uart_config_t bikeGpsConfig;
-       	
+
 	bikeGpsConfig.baud_rate           = 9600;
 	bikeGpsConfig.data_bits           = UART_DATA_8_BITS;
 	bikeGpsConfig.parity              = UART_PARITY_DISABLE;
