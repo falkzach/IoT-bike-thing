@@ -17,11 +17,11 @@
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 
-#include "./LSM9DS1/LSM9DS1.c"
+#include "LSM9DS1/LSM9DS1.cpp"
 
 xSemaphoreHandle print_mux;
 
-void app_main()
+extern "C" void app_main()
 {
 	/* Print chip information */
 	esp_chip_info_t chip_info;
