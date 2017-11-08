@@ -4,9 +4,9 @@
 #include "LSM9DS1.h"
 #include "LSM9DS1_types.h"
 
-extern xSemaphoreHandle print_mux;
-
 #define DELAY_TIME_BETWEEN_ITEMS_MS   5000 /*!< delay time between different test items */
+
+extern xSemaphoreHandle print_mux;
 
 static void init_i2c()
 {

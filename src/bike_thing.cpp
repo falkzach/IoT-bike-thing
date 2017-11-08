@@ -17,7 +17,9 @@
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 
+
 #include "LSM9DS1/LSM9DS1.cpp"
+#include "GP20U7/GP20U7.cpp"
 
 xSemaphoreHandle print_mux;
 
@@ -37,11 +39,19 @@ extern "C" void app_main()
 		(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	print_mux = xSemaphoreCreateMutex();
 
+
+	/*
+	 * init sensors
+	 */
 //	init_i2c();
 //	LSM9DS1_init();
+	GP20U7_init();
 
+	/*
+	 * register tasks
+	 */
 	xTaskCreate(i2c_task_who_am_i, "LSM9DS1_whoami_task", 1024 * 2, (void* ) 0, 10, NULL);
-
 	// xTaskCreate(i2c_task_LSM9DS1, "LSM9DS1_task", 1024 * 2, (void* ) 0, 10, NULL);
+	xTaskCreate(GP20U7_task, "GPS - GP20U7_task", 1024 * 2, (void* ) 0, 10, NULL);
 
 }
