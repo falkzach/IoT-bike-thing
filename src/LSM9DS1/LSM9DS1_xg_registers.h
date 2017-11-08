@@ -29,7 +29,7 @@
 #define INT_GEN_SRC_G 0x14
 #define OUT_TEMP_L 0x15
 #define OUT_TEMP_H 0x16
-#define STATUS_REG 0x17
+#define STATUS_REG_0 0x17
 #define OUT_X_L_G 0x18
 #define OUT_X_H_G 0x19
 #define OUT_Y_L_G 0x1A
@@ -44,7 +44,7 @@
 #define CTRL_REG9 0x23
 #define CTRL_REG10 0x24
 #define INT_GEN_SRC_XL 0x26
-#define STATUS_REG 0x27
+#define STATUS_REG_1 0x27 //TODO: 2 status reges
 #define OUT_X_L_XL 0x28
 #define OUT_X_H_XL 0x29
 #define OUT_Y_L_XL 0x2A

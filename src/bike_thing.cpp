@@ -37,8 +37,8 @@ extern "C" void app_main()
 		(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	print_mux = xSemaphoreCreateMutex();
 
-	init_i2c();
-	LSM9DS1_init();
+//	init_i2c();
+//	LSM9DS1_init();
 
 	xTaskCreate(i2c_task_who_am_i, "LSM9DS1_whoami_task", 1024 * 2, (void* ) 0, 10, NULL);
 
