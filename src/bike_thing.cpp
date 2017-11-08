@@ -1,125 +1,164 @@
-/*
-	Bike Thing
-
-	Sparkfun ESP32-Thing
-	https://www.sparkfun.com/products/13907
-
-	Espressif IDF
-	https://github.com/espressif/esp-idf
-
-	Unless required by applicable law or agreed to in writing, this
-	software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-	CONDITIONS OF ANY KIND, either express or implied.
+/* SD card and FAT filesystem example.
+This example code is in the Public Domain (or CC0 licensed, at your option.)
+Unless required by applicable law or agreed to in writing, this
+software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied.
 */
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_system.h"
-#include "esp_spi_flash.h"
-#include "driver/uart.h"
-#include "minmea.h"
+#include <string.h>
+#include <stdlib.h>
+#include <sys/unistd.h>
+#include <sys/stat.h>
+#include "esp_err.h"
+#include "esp_log.h"
+#include "esp_vfs_fat.h"
+#include "driver/sdmmc_host.h"
+#include "driver/sdspi_host.h"
+#include "sdmmc_cmd.h"
 
-#include "./LSM9DS1_accel_gyro_register_map.hpp"
-#include "./LSM9DS1_magnetic_register_map.hpp"
 
-// The GP-20u7 unit is only used to recieve data from the satellite.
-#define GPS_TX_ESP_RX GPIO_NUM_16
-#define GPS_UART_NUM UART_NUM_2
-#define BUF_SIZE (2048)
+static const char *TAG = "example";
 
-void parse_gps_rmc(const char * line) {
+// This example can use SDMMC and SPI peripherals to communicate with SD card.
+// By default, SDMMC peripheral is used.
+// To enable SPI mode, uncomment the following line:
 
-	switch (minmea_sentence_id(line, false)) {
-		case MINMEA_SENTENCE_RMC: {
-			struct minmea_sentence_rmc rmc_frame;
-			if(minmea_parse_rmc(&rmc_frame, line)) {
-				printf("RMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d\n",rmc_frame.latitude.value,rmc_frame.latitude.scale,rmc_frame.longitude.value,rmc_frame.longitude.scale,rmc_frame.speed.value,rmc_frame.speed.scale);
-			}
-			break;
+#define USE_SPI_MODE
+
+// When testing SD and SPI modes, keep in mind that once the card has been
+// initialized in SPI mode, it can not be reinitialized in SD mode without
+// toggling power to the card.
+
+#ifdef USE_SPI_MODE
+// Pin mapping when using SPI mode.
+// With this mapping, SD card can be used both in SPI and 1-line SD mode.
+// Note that a pull-up on CS line is required in SD mode.
+#define PIN_NUM_MISO GPIO_NUM_19 //was 2
+#define PIN_NUM_MOSI GPIO_NUM_23 //was 15
+#define PIN_NUM_CLK  GPIO_NUM_18 //was 14
+#define PIN_NUM_CS   GPIO_NUM_2  // was 13
+#endif //USE_SPI_MODE
+
+void app_main(void)
+{
+	//ESP_LOGI(TAG, "Initializing SD card");
+	printf("initializing card" );
+	#ifndef USE_SPI_MODE
+		//ESP_LOGI(TAG, "Using SDMMC peripheral");
+		printf("Using SDMMC peripheral");
+		sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+
+		// To use 1-line SD mode, uncomment the following line:
+		// host.flags = SDMMC_HOST_FLAG_1BIT;
+
+		// This initializes the slot without card detect (CD) and write protect (WP) signals.
+		// Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
+		sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+
+		// GPIOs 15, 2, 4, 12, 13 should have external 10k pull-ups.
+		// Internal pull-ups are not sufficient. However, enabling internal pull-ups
+		// does make a difference some boards, so we do that here.
+		gpio_set_pull_mode(23, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
+		gpio_set_pull_mode(19, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
+		gpio_set_pull_mode(4, GPIO_PULLUP_ONLY);    // D1, needed in 4-line mode only
+		gpio_set_pull_mode(12, GPIO_PULLUP_ONLY);   // D2, needed in 4-line mode only
+		gpio_set_pull_mode(2, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
+
+	#else
+		//ESP_LOGI(TAG, "Using SPI peripheral");
+		printf("Using SPI peripheral");
+		sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+		sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
+		slot_config.gpio_miso = PIN_NUM_MISO;
+		slot_config.gpio_mosi = PIN_NUM_MOSI;
+		slot_config.gpio_sck  = PIN_NUM_CLK;
+		slot_config.gpio_cs   = PIN_NUM_CS;
+		// This initializes the slot without card detect (CD) and write protect (WP) signals.
+		// Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
+	#endif //USE_SPI_MODE
+
+		// Options for mounting the filesystem.
+		// If format_if_mount_failed is set to true, SD card will be partitioned and
+		// formatted in case when mounting fails.
+		esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+		.format_if_mount_failed = false,
+		.max_files = 5
+	};
+
+	// Use settings defined above to initialize SD card and mount FAT filesystem.
+	// Note: esp_vfs_fat_sdmmc_mount is an all-in-one convenience function.
+	// Please check its source code and implement error recovery when developing
+	// production applications.
+	sdmmc_card_t* card;
+	esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card);
+
+	if (ret != ESP_OK) {
+		if (ret == ESP_FAIL) {
+		//ESP_LOGE(TAG, "Failed to mount filesystem. "
+		//  "If you want the card to be formatted, set format_if_mount_failed = true.");
+		printf("failed to mount filesystem\n");
+		} else {
+			//ESP_LOGE(TAG, "Failed to initialize the card (%d). "
+			//  "Make sure SD card lines have pull-up resistors in place.", ret);
+			printf("failed to initialize\n");
 		}
-		case MINMEA_SENTENCE_GLL: {
-			printf("GLL SENTENCE\n");
-			break;
-		}
-		case MINMEA_SENTENCE_VTG: {
-			printf("VTG SENTENCE\n");
-			break;
-		}
-		case MINMEA_SENTENCE_ZDA: {
-			printf("ZDA SENTENCE\n");
-			break;
-		}
-		case MINMEA_SENTENCE_GGA: {
-			printf("GGA SENTENCE\n");
-			break;
-		}
-		case MINMEA_SENTENCE_GSA: {
-			printf("GSA SENTENCE\n");
-			break;
-		}
-		case MINMEA_UNKNOWN: {
-			printf("UNKNOWN SENTENCE\n");
-			break;
-		}
-		case MINMEA_INVALID: {
-			printf("INVALID SENTENCE\n");
-			break;
-		}
-		default: {
-			printf("NONE\n");
-			break;
-		}
+		return;
 	}
 
-}
+	// Card has been initialized, print its properties
+	sdmmc_card_print_info(stdout, card);
 
-// Read gps data from GP-20u7 gps.
-void read_gps(uint8_t *line) {
-  int size; unsigned int count = 0;
-	uint8_t * ptr = line;
-	do {
-		size = uart_read_bytes(GPS_UART_NUM, ptr, 1, 1000/portMAX_DELAY);
-    printf("%d\n",size);
-			if (*ptr == '\n') {
-				ptr++;
-				*ptr = 0;
-				break;
-			}
-			ptr++;
-			++count;
-  } while (size > 0 || count > 256);
-}
+	// Use POSIX and C standard library functions to work with files.
+	// First create a file.
+	//ESP_LOGI(TAG, "Opening file");
+	printf("Opening file\n");
+	FILE* f = fopen("/sdcard/hello.txt", "w");
+	if (f == NULL) {
+		printf("failed to open file\n");
+		//ESP_LOGE(TAG, "Failed to open file for writing");
+		return;
+	}
+	fprintf(f, "Hello %s!\n", card->cid.name);
+	fprintf(f, "THIS IS SOME GPS DATA\n");
+	fclose(f);
+	//ESP_LOGI(TAG, "File written");
+	printf("file written");
+	// Check if destination file exists before renaming
+	struct stat st;
+	if (stat("/sdcard/foo.txt", &st) == 0) {
+		// Delete it if it exists
+		unlink("/sdcard/foo.txt");
+	}
 
-// init for the GP-20u7 gps
-void gps_init() {
-	
-	uart_config_t bikeGpsConfig;
-       	
-	bikeGpsConfig.baud_rate           = 9600;
-	bikeGpsConfig.data_bits           = UART_DATA_8_BITS;
-	bikeGpsConfig.parity              = UART_PARITY_DISABLE;
-	bikeGpsConfig.stop_bits           = UART_STOP_BITS_1;
-	bikeGpsConfig.flow_ctrl           = UART_HW_FLOWCTRL_DISABLE;
-	bikeGpsConfig.rx_flow_ctrl_thresh = 120;
+	// Rename original file
+	//ESP_LOGI(TAG, "Renaming file");
+	printf("renaming file\n");
+	if (rename("/sdcard/hello.txt", "/sdcard/foo.txt") != 0) {
+		//ESP_LOGE(TAG, "Rename failed");
+		printf("rename failed\n");
+		return;
+	}
 
-	uart_param_config(GPS_UART_NUM, &bikeGpsConfig);
 
-	uart_set_pin(GPS_UART_NUM, UART_PIN_NO_CHANGE, GPS_TX_ESP_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+	// Open renamed file for reading
+	//ESP_LOGI(TAG, "Reading file");
+	printf("reading file\n");
+	f = fopen("/sdcard/foo.txt", "r");
+	if (f == NULL) {
+		//ESP_LOGE(TAG, "Failed to open file for reading");
+		printf("failed to open file for reading\n");
+		return;
+	}
+	char line[64];
+	while(fgets(line, sizeof(line), f) != NULL) {
+		printf("%s",line);
+	}
+	fclose(f);
 
-	uart_driver_install(GPS_UART_NUM, BUF_SIZE, BUF_SIZE, 10, NULL, 0);
-
-}
-
-void app_main()
-{
-    gps_init();
-
-      char * rmc_line;
-	rmc_line = (char *)malloc(256);
-
-  while(1) {
-		read_gps((uint8_t *)rmc_line);
-		parse_gps_rmc(rmc_line);
-		read_9dof()
-  }
+	//ESP_LOGI(TAG, "Read from file: '%s'", line);
+	printf("read from file");
+	// All done, unmount partition and disable SDMMC or SPI peripheral
+	esp_vfs_fat_sdmmc_unmount();
+	//ESP_LOGI(TAG, "Card unmounted");
+	printf("card unmounted\n");
 }
