@@ -1,6 +1,6 @@
 #include "driver/uart.h"
 #include "minmea.h"
-#include "gpio.h"
+#include "esp_system.h"
 
 // The GP-20u7 unit is only used to recieve data from the satellite.
 #define GPS_TX_ESP_RX GPIO_NUM_16
