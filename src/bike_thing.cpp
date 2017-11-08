@@ -43,8 +43,8 @@ extern "C" void app_main()
 	/*
 	 * init sensors
 	 */
-//	init_i2c();
-//	LSM9DS1_init();
+	init_i2c();
+	LSM9DS1_init();
 	GP20U7_init();
 
 	/*
