@@ -46,6 +46,7 @@ extern "C" void app_main()
 	init_i2c();
 	LSM9DS1_init();
 	GP20U7_init();
+	sdmmc_card_t Card = init_sdcard();
 
 	/*
 	 * register tasks
