@@ -1,6 +1,7 @@
 #include "driver/uart.h"
 #include "../minmea.h"
 #include "esp_system.h"
+#include "../MicroSDBreakout/MicroSDBreakout.cpp"
 
 // The GP-20u7 unit is only used to recieve data from the satellite.
 #define GPS_TX_ESP_RX GPIO_NUM_16
@@ -17,7 +18,7 @@ static void parse_gps_rmc(const char * line) {
         case MINMEA_SENTENCE_RMC: {
             struct minmea_sentence_rmc rmc_frame;
             if(minmea_parse_rmc(&rmc_frame, line)) {
-		const char result[2048];
+		char result[2048];
 		// sprintf is a string output buffer that formats strings with values from variables.
 		sprintf(result, "RMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d\n", rmc_frame.latitude.value,rmc_frame.latitude.scale,rmc_frame.longitude.value,rmc_frame.longitude.scale,rmc_frame.speed.value,rmc_frame.speed.scale);
             	write_line_to_file("/sdcard/GPS_DATA.txt", result);
