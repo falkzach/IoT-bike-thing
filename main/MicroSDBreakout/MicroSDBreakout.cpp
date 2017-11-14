@@ -26,12 +26,12 @@
 /*
  *	initializes the sd card in SPI mode
  */
-static sdmmc_card_t init_sdcard() {
+static void init_sdcard() {
 
-	printf("initializing card" );
+	printf("initializing card\n" );
 	#ifndef USE_SPI_MODE
 		//ESP_LOGI(TAG, "Using SDMMC peripheral");
-		printf("Using SDMMC peripheral");
+		printf("Using SDMMC peripheral\n");
 		sdmmc_host_t host = SDMMC_HOST_DEFAULT();
 
 		// To use 1-line SD mode, uncomment the following line:
@@ -41,18 +41,14 @@ static sdmmc_card_t init_sdcard() {
 		// Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
 		sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
 
-		// GPIOs 15, 2, 4, 12, 13 should have external 10k pull-ups.
 		// Internal pull-ups are not sufficient. However, enabling internal pull-ups
 		// does make a difference some boards, so we do that here.
 		gpio_set_pull_mode(23, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
 		gpio_set_pull_mode(19, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
-		gpio_set_pull_mode(4, GPIO_PULLUP_ONLY);    // D1, needed in 4-line mode only
-		gpio_set_pull_mode(12, GPIO_PULLUP_ONLY);   // D2, needed in 4-line mode only
 		gpio_set_pull_mode(2, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
 
 	#else
-		//ESP_LOGI(TAG, "Using SPI peripheral");
-		printf("Using SPI peripheral");
+		printf("Using SPI peripheral\n");
 		sdmmc_host_t host = SDSPI_HOST_DEFAULT();
 		sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
 		slot_config.gpio_miso = PIN_NUM_MISO;
@@ -86,7 +82,7 @@ static sdmmc_card_t init_sdcard() {
 		}
 		return;
 	}
-	return card;
+	return;
 }
 
 /*
@@ -103,7 +99,7 @@ static void write_line_to_file(char* filename, char* line) {
 
 	fprintf(f, line);
 	fclose(f);
-	printf("file written");
+	printf("file written\n");
 
 }
 
@@ -122,11 +118,11 @@ static void read_from_file(char* filename) {
 	char line[64];
 
 	while(fgets(line, sizeof(line), f) != NULL) {
-		printf("%s",line);
+		printf("%s\n",line);
 	}
 
 	fclose(f);
-	printf("read from file");
+	printf("read from file\n");
 
 }
 	
