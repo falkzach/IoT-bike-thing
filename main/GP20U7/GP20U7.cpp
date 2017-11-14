@@ -17,7 +17,10 @@ static void parse_gps_rmc(const char * line) {
         case MINMEA_SENTENCE_RMC: {
             struct minmea_sentence_rmc rmc_frame;
             if(minmea_parse_rmc(&rmc_frame, line)) {
-                printf("RMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d\n",rmc_frame.latitude.value,rmc_frame.latitude.scale,rmc_frame.longitude.value,rmc_frame.longitude.scale,rmc_frame.speed.value,rmc_frame.speed.scale);
+		const char result[2048];
+		// sprintf is a string output buffer that formats strings with values from variables.
+		sprintf(result, "RMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d\n", rmc_frame.latitude.value,rmc_frame.latitude.scale,rmc_frame.longitude.value,rmc_frame.longitude.scale,rmc_frame.speed.value,rmc_frame.speed.scale);
+            	write_line_to_file("/sdcard/GPS_DATA.txt", result);
             }
             break;
         }
