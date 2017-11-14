@@ -1,5 +1,5 @@
 #include "driver/uart.h"
-#include "minmea.h"
+#include "../minmea.h"
 #include "esp_system.h"
 
 // The GP-20u7 unit is only used to recieve data from the satellite.
