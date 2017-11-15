@@ -14,7 +14,7 @@
 #define PIN_NUM_MISO GPIO_NUM_19
 #define PIN_NUM_MOSI GPIO_NUM_23
 #define PIN_NUM_CLK  GPIO_NUM_18
-#define PIN_NUM_CS   GPIO_NUM_2
+#define PIN_NUM_CS   GPIO_NUM_5
 
 #define DELAY_TIME_BETWEEN_ITEMS_MS	5000 /*!< delay time between different test items */
 
@@ -25,9 +25,10 @@ extern xSemaphoreHandle print_mux;
  */
 static sdmmc_card_t* init_sdcard() {
 	
+	xSemaphoreTake(print_mux, portMAX_DELAY);
 	printf("initializing card\n" );
 	printf("Using SPI peripheral\n");
-	print_mux = xSemaphoreCreateMutex();
+	xSemaphoreGive(print_mux);
 	
 	sdmmc_host_t host = SDSPI_HOST_DEFAULT();
 	sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
@@ -51,6 +52,8 @@ static sdmmc_card_t* init_sdcard() {
 	// production applications.
 	sdmmc_card_t* card;
 	esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card);
+	
+	xSemaphoreTake(print_mux, portMAX_DELAY);
 
 	if (ret != ESP_OK) {
 		if (ret == ESP_FAIL) {
@@ -59,8 +62,9 @@ static sdmmc_card_t* init_sdcard() {
 			printf("failed to initialize\n");
 		}
 	}
+
+	xSemaphoreGive(print_mux);	
 	
-	print_mux = xSemaphoreCreateMutex();
 	
 	return card;
 }
@@ -74,11 +78,11 @@ static void write_line_to_file(char* filename, char* line) {
 
 	if (f == NULL) {
 		printf("failed to open file\n");
-		print_mux = xSemaphoreCreateMutex();
 		return;
 	}
-
+	xSemaphoreTake(print_mux, portMAX_DELAY);
 	fprintf(f, line);
+	xSemaphoreGive(print_mux);
 	fclose(f);
 
 }
@@ -95,12 +99,12 @@ static void read_from_file(char* filename) {
 	}
 
 	char line[64];
-
-	while(fgets(line, sizeof(line), f) != NULL) {
-		printf("%s\n",line);
-	}
 	
-	print_mux = xSemaphoreCreateMutex();
+	xSemaphoreTake(print_mux, portMAX_DELAY);
+	while(fgets(line, sizeof(line), f) != NULL) {
+		printf("%s",line);
+	}
+	xSemaphoreGive(print_mux);
 
 	fclose(f);
 	

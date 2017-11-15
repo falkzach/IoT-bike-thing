@@ -16,7 +16,7 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "esp_spi_flash.h"
-
+#include <sys/unistd.h>
 
 #include "LSM9DS1/LSM9DS1.cpp"
 #include "GP20U7/GP20U7.cpp"
@@ -27,6 +27,10 @@ xSemaphoreHandle print_mux;
 extern "C" void app_main()
 {
 	/* Print chip information */
+	print_mux = xSemaphoreCreateMutex();
+	
+	xSemaphoreTake(print_mux, portMAX_DELAY);
+	
 	esp_chip_info_t chip_info;
 	esp_chip_info(&chip_info);
 	printf("This is ESP32 chip with %d CPU cores, WiFi%s%s, ",
@@ -38,34 +42,24 @@ extern "C" void app_main()
 
 	printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 		(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
-	print_mux = xSemaphoreCreateMutex();
 
+	xSemaphoreGive(print_mux);
 
 	/*
 	 * init sensors
 	 */
-	// init_i2c();
-	// LSM9DS1_init();
-	// GP20U7_init();
+	init_i2c();
+	LSM9DS1_init();
+	GP20U7_init();
 	sdmmc_card_t* sdcard = init_sdcard();
 
-	printf("SD CARD %s mounted\n", sdcard->cid.name);
 	/*
 	 * register tasks
 	 */
-	// xTaskCreate(i2c_task_who_am_i, "LSM9DS1_whoami_task", 1024 * 2, (void* ) 0, 10, NULL);
+	xTaskCreate(i2c_task_who_am_i, "LSM9DS1_whoami_task", 1024 * 2, (void* ) 0, 10, NULL);
 	// xTaskCreate(i2c_task_LSM9DS1, "LSM9DS1_task", 1024 * 2, (void* ) 0, 10, NULL);
-	// xTaskCreate(GP20U7_task, "GPS - GP20U7_task", 1024 * 2, (void* ) 0, 10, NULL);
-
-	write_line_to_file("/sdcard/new.txt", "Hello new world");
-	
-	char l[516];
-	sprintf(l,"New line %d",1);
-	print_mux = xSemaphoreCreateMutex();
-
-	write_line_to_file("/sdcard/new.txt", l);
-
-	read_from_file("/sdcard/new.txt");
+	xTaskCreate(GP20U7_task, "GPS - GP20U7_task", 1024 * 2, (void* ) 0, 10, NULL);
 
 	unmount_sdcard();
+	
 }
