@@ -18,7 +18,8 @@ static void parse_gps_rmc(const char * line) {
             struct minmea_sentence_rmc rmc_frame;
             if(minmea_parse_rmc(&rmc_frame, line)) {
                 xSemaphoreTake(print_mux, portMAX_DELAY);
-		printf("RMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d\n",rmc_frame.latitude.value,rmc_frame.latitude.scale,rmc_frame.longitude.value,rmc_frame.longitude.scale,rmc_frame.speed.value,rmc_frame.speed.scale);
+		printf("%s\n",line);
+		//printf("RMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d\n",rmc_frame.latitude.value,rmc_frame.latitude.scale,rmc_frame.longitude.value,rmc_frame.longitude.scale,rmc_frame.speed.value,rmc_frame.speed.scale);
             	xSemaphoreGive(print_mux);
 	    }
             break;
@@ -59,6 +60,9 @@ char *read_gps() {
 	char *ptr = line;
 	while(1) {
 		size = uart_read_bytes(GPS_UART_NUM, (unsigned char *)ptr, 1, portMAX_DELAY);
+		xSemaphoreTake(print_mux, portMAX_DELAY);
+		printf("%s\n", line);
+		xSemaphoreGive(print_mux);
 		if (size == 1) {
 			if (*ptr == '\n') {
 				ptr++;
