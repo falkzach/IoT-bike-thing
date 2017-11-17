@@ -60,21 +60,22 @@ static void parse_gps_rmc(const char * line) {
 }
 
 // Read gps data from GP-20u7 gps.
-static void read_gps(uint8_t *line) {
-    int size; unsigned int count = 0;
-    uint8_t * ptr = line;
-    do {
-        size = uart_read_bytes(GPS_UART_NUM, ptr, 1, 1000/portMAX_DELAY);
-        printf("%d\n",size);
-        if (*ptr == '\n') {
-            ptr++;
-            *ptr = 0;
-            break;
-        }
-        ptr++;
-        ++count;
-    } while (size > 0 || count > 256);
-}
+char *read_gps() {
+	static char line[256];
+	int size;
+	char *ptr = line;
+	while(1) {
+		size = uart_read_bytes(GPS_UART_NUM, (unsigned char *)ptr, 1, portMAX_DELAY);
+		if (size == 1) {
+			if (*ptr == '\n') {
+				ptr++;
+				*ptr = 0;
+				return line;
+			}
+			ptr++;
+		} // End of read a character
+	} // End of loop
+} // End of readLine
 
 // init for the GP-20u7 gps
 static void GP20U7_init() {
@@ -99,12 +100,9 @@ static void GP20U7_init() {
 static void GP20U7_task(void* arg)
 {
     uint32_t task_idx = (uint32_t) arg;
-    char * rmc_line;
-    //TODO: FIXME: http://www.freertos.org/a00111.html mallocs are not advised!
-    rmc_line = (char *)malloc(256);
-
+	char *rmc_line;
     while (1) {
-        read_gps((uint8_t *)rmc_line);
+        rmc_line = read_gps();
         parse_gps_rmc(rmc_line);
 
         vTaskDelay(( DELAY_TIME_BETWEEN_ITEMS_MS * ( task_idx + 1 ) ) / portTICK_RATE_MS);
