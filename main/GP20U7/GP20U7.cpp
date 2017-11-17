@@ -17,44 +17,37 @@ static void parse_gps_rmc(const char * line) {
         case MINMEA_SENTENCE_RMC: {
             struct minmea_sentence_rmc rmc_frame;
             if(minmea_parse_rmc(&rmc_frame, line)) {
-                printf("RMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d\n",rmc_frame.latitude.value,rmc_frame.latitude.scale,rmc_frame.longitude.value,rmc_frame.longitude.scale,rmc_frame.speed.value,rmc_frame.speed.scale);
-            }
+                xSemaphoreTake(print_mux, portMAX_DELAY);
+		sprintf("RMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d\n",rmc_frame.latitude.value,rmc_frame.latitude.scale,rmc_frame.longitude.value,rmc_frame.longitude.scale,rmc_frame.speed.value,rmc_frame.speed.scale);
+            	xSemaphoreGive(print_mux);
+	    }
             break;
         }
         case MINMEA_SENTENCE_GLL: {
-            printf("GLL SENTENCE\n");
             break;
         }
         case MINMEA_SENTENCE_VTG: {
-            printf("VTG SENTENCE\n");
             break;
         }
         case MINMEA_SENTENCE_ZDA: {
-            printf("ZDA SENTENCE\n");
             break;
         }
         case MINMEA_SENTENCE_GGA: {
-            printf("GGA SENTENCE\n");
             break;
         }
         case MINMEA_SENTENCE_GSA: {
-            printf("GSA SENTENCE\n");
             break;
         }
         case MINMEA_UNKNOWN: {
-            printf("UNKNOWN SENTENCE\n");
             break;
         }
         case MINMEA_INVALID: {
-            printf("INVALID SENTENCE\n");
             break;
         }
         default: {
-            printf("NONE\n");
             break;
         }
 
-        print_mux = xSemaphoreCreateMutex();
     }
 
 }
