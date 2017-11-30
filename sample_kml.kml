@@ -1,6 +1,6 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
-  <name>Ride Data</name> <1-- contains the coordinates and the magnitude 9dof readings
+  <name>Ride Data</name> <1-- contains the coordinates and the magnitude 9dof readings -->
   <Placemark>
     <ExtendedData>
       <Data name="gpsMarker">
