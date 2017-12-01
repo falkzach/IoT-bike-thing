@@ -1,66 +1,173 @@
-<!doctype html>
-
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
 	<meta charset="utf-8">
-	<title>Bike Thing Track App</title>
-	<meta name="description" content="Plot points on a map">
-	<meta name="author" content="Bike Thing Group">
-   	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+	<title>Bike Rides</title>
 	<style>
 		/* Always set the map height explicitly to define the size of the div
 		* element that contains the map. */
 		#map {
-			width: 100%;
-			height: 100%;
+			height: 90%;
 		}
 		/* Optional: Makes the sample page fill the window. */
 		html, body {
 			height: 100%;
-			margin: 25px;
+			margin: 0;
 			padding: 0;
 		}
+		#floating-panel {
+			position: absolute;
+			top: 10px;
+			left: 25%;
+			z-index: 5;
+			background-color: #fff;
+			padding: 5px;
+			border: 1px solid #999;
+			text-align: center;
+			font-family: 'Roboto','sans-serif';
+			line-height: 30px;
+			padding-left: 10px;
+		}
+		#floating-panel {
+			background-color: #fff;
+			border: 1px solid #999;
+			left: 25%;
+			padding: 5px;
+			position: absolute;
+			top: 10px;
+			z-index: 5;
+		}
 	</style>
-
 </head>
 
 <body>
+	<input type="file" id="files" name="files[]" multiple />
 
-	<h1>Bike Thing Tracker</h1>
-	<!google maps api>
-	<div id="map">
-		
+	<div id="floating-panel">
+		<button onclick="toggleHeatmap()">Toggle Heatmap</button>
+		<button onclick="changeGradient()">Change gradient</button>
+		<button onclick="changeRadius()">Change radius</button>
+		<button onclick="changeOpacity()">Change opacity</button>
 	</div>
-	<h2>Ride Stats</h2>
+	<div id="map"></div>
+	<div id="lg"></div>
 	<script>
-		var map;
 
-		function init_map() {
+		// This example requires the Visualization library. Include the libraries=visualization 
 
-			// TODO get the rides first point and zoom to it.  If multiple rides, just get the first one
-			var latlong = {lat: 46.858, lng: -114.013};
+		var map, heatmap, kmlLayer, reader, parser, xmlDoc;
+
+		var heatmapPoints = [];
+
+		parser = new DOMParser();
+
+		function initMap() {
 			map = new google.maps.Map(document.getElementById('map'), {
-				center: latlong,
-				zoom: 9
+				zoom: 13,
+				center: {lat: 46.858574, lng: -114.012864},
+				mapTypeId: 'satellite'
 			});
-			var marker;
-			
-			for (var i = 0; i < 4; ++i) {
-				var coor = {lat: latlong.lat+i*(1/125), lng: latlong.lng+i*(1/125)};
-				marker = new google.maps.Marker({
-					position: coor,
-					map: map
-				});
-		
+
+			heatmap = new google.maps.visualization.HeatmapLayer({
+				data: [],
+				map: map
+			});
+
+			kmlLayer = new google.maps.KmlLayer({
+				url: 'https://sites.google.com/site/kmlrepobikething/kml_files/sample_kml.kml',
+				suppressInfoWindows: true,
+				map: map
+			});
+
+			kmlLayer.addListener('click', function(kmlEvent) {
+				console.log(kmlEvent.featureData.info_window_html);
+				var text = kmlEvent.featureData.info_window_html;
+				showInContentWindow(text);
+			});
+
+			function showInContentWindow(text) {
+				var sidediv = document.getElementById('lg');
+				sidediv.innerHTML = text;
 			}
 		}
-	</script>
-	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKe8A9vDTluZYfwHZAsJmepp46QJr2gIc&callback=init_map"></script>
-	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
 
+		function toggleHeatmap() {
+			heatmap.setMap(heatmap.getMap() ? null : map);
+		}
+
+		function toggleKmlLayer() {
+			kmlLayer.setMap(kmlLayer.getMap() ? null : map);
+		}
+
+		function changeGradient() {
+			var gradient = [
+				'rgba(0, 255, 255, 0)',
+				'rgba(0, 255, 255, 1)',
+				'rgba(0, 191, 255, 1)',
+				'rgba(0, 127, 255, 1)',
+				'rgba(0, 63, 255, 1)',
+				'rgba(0, 0, 255, 1)',
+				'rgba(0, 0, 223, 1)',
+				'rgba(0, 0, 191, 1)',
+				'rgba(0, 0, 159, 1)',
+				'rgba(0, 0, 127, 1)',
+				'rgba(63, 0, 91, 1)',
+				'rgba(127, 0, 63, 1)',
+				'rgba(191, 0, 31, 1)',
+				'rgba(255, 0, 0, 1)'
+			]
+			heatmap.set('gradient', heatmap.get('gradient') ? null : gradient);
+		}
+
+		function changeRadius() {
+			heatmap.set('radius', heatmap.get('radius') ? null : 25);
+		}
+
+		function changeOpacity() {
+			heatmap.set('opacity', heatmap.get('opacity') ? null : 0.2);
+		}
+
+		function handleFileSelect(evt) {
+			files = evt.target.files;
+
+			// Loop through the FileList
+			for (var i = 0, f; f = files[i]; i++) {
+
+				var reader = new FileReader();
+
+				// Closure to capture the file information.
+				reader.onload = (function(theFile) {
+					return function(e) {
+						// Print the contents of the file
+						var span = document.createElement('span');
+						span.innerHTML = e.target.result;
+						xmlDoc = parser.parseFromString(span.innerHTML, "text/xml");
+						var size = xmlDoc.getElementsByTagName("placemark").length;
+
+						for (var p = 0; p < size; ++p) {
+
+							var coor = xmlDoc.getElementsByTagName("coordinates")[p].childNodes[0].nodeValue.split(',');
+							var mag = xmlDoc.getElementsByTagName("value")[2*p+1].childNodes[0].nodeValue;
+
+							heatmapPoints.push({location: new google.maps.LatLng(coor[1], coor[0]), weight: mag});
+
+						}
+
+						console.log(heatmapPoints);
+						heatmap.setData(heatmapPoints);
+
+					};
+				})(f);
+
+				reader.readAsText(f);
+			}
+		}
+		
+		document.getElementById('files').addEventListener('change', handleFileSelect, false);
+
+	</script>
+	<script async defer
+		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKe8A9vDTluZYfwHZAsJmepp46QJr2gIc&libraries=visualization&callback=initMap">
+	</script>
 </body>
 </html>
