@@ -8,6 +8,9 @@
 		* element that contains the map. */
 		#map {
 			height: 90%;
+			margin: auto;
+			width: 90%;
+			border: 2px solid blue;
 		}
 		/* Optional: Makes the sample page fill the window. */
 		html, body {
@@ -44,6 +47,7 @@
 	<input type="file" id="files" name="files[]" multiple />
 
 	<div id="floating-panel">
+		<button onclick="toggleKmlLayer">Toggle KML</button>
 		<button onclick="toggleHeatmap()">Toggle Heatmap</button>
 		<button onclick="changeGradient()">Change gradient</button>
 		<button onclick="changeRadius()">Change radius</button>
@@ -74,7 +78,7 @@
 			});
 
 			kmlLayer = new google.maps.KmlLayer({
-				url: 'https://sites.google.com/site/kmlrepobikething/kml_files/sample_kml.kml',
+				url: 'https://sites.google.com/site/kmlrepobikething/kml_files/sample_kml',
 				suppressInfoWindows: true,
 				map: map
 			});
@@ -96,7 +100,7 @@
 		}
 
 		function toggleKmlLayer() {
-			kmlLayer.setMap(kmlLayer.getMap() ? null : map);
+			kmlLayer.setMap(kmlLayer.getMap() ? map : null);
 		}
 
 		function changeGradient() {
@@ -141,25 +145,46 @@
 						// Print the contents of the file
 						var span = document.createElement('span');
 						span.innerHTML = e.target.result;
-						xmlDoc = parser.parseFromString(span.innerHTML, "text/xml");
-						var size = xmlDoc.getElementsByTagName("placemark").length;
-
-						for (var p = 0; p < size; ++p) {
-
-							var coor = xmlDoc.getElementsByTagName("coordinates")[p].childNodes[0].nodeValue.split(',');
-							var mag = xmlDoc.getElementsByTagName("value")[2*p+1].childNodes[0].nodeValue;
-
-							heatmapPoints.push({location: new google.maps.LatLng(coor[1], coor[0]), weight: mag});
-
-						}
-
-						console.log(heatmapPoints);
-						heatmap.setData(heatmapPoints);
-
+						parseKML(span.innerHTML);
 					};
 				})(f);
 
 				reader.readAsText(f);
+			}
+		}
+
+		function parseKML(text) {
+			xmlDoc = parser.parseFromString(text, "text/xml");
+			var size = xmlDoc.getElementsByTagName("placemark").length;
+			if (size > 0) {
+				var coordinates = xmlDoc.getElementsByTagName("coordinates");
+				if (xmlDoc.getElementsByTagName("extendeddata").length > 0) {
+					var magnitudes = xmlDoc.getElementsByTagName("value");
+					for (var p = 0; p < size; ++p) {
+                
+						var coor = coordinates[p].childNodes[0].nodeValue.split(',');
+						var mag = xmlDoc.getElementsByTagName("value")[2*p+1].childNodes[0].nodeValue;
+                
+						heatmapPoints.push({location: new google.maps.LatLng(coor[1], coor[0]), weight: mag});
+                
+					}
+                
+				} else {
+	
+					console.log(coordinates[0].firstChild);
+					coordinates = (coordinates[0].firstChild.nodeValue.replace( /\n/g, " " ).split( " " ));
+					console.log(coordinates);
+					for (var i = 0; i < coordinates.length; ++i) {
+						coor = coordinates[i].split(',');
+						if (coor.length > 1) {
+								
+							heatmapPoints.push(new google.maps.LatLng(coor[1], coor[0]));
+						}
+					}
+				}
+		
+				console.log(heatmapPoints);
+				heatmap.setData(heatmapPoints);
 			}
 		}
 		
