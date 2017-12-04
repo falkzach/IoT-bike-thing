@@ -49,6 +49,9 @@ static const char *TAG = "example";
 
 #define ESP_INTR_FLAG_DEFAULT 0
 
+TaskHandle_t gps_task;
+TaskHandle_t ninedof_task;
+
 static xQueueHandle gpio_evt_queue = NULL;
 
 static void IRAM_ATTR gpio_isr_handler(void* arg)
@@ -63,15 +66,24 @@ static void gpio_task_example(void* arg)
     for(;;) {
         if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
             printf("GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
-        }
+            
+	    if (io_num == 16){
+	    	xTaskCreate(i2c_task_who_am_i, "LSM9DS1_whoami_task", 1024 * 2, (void* ) 0, 10, &ninedof_task);
+  	    	xTaskCreate(GP20U7_task, "GPS - GP20U7_task", 1024 * 2, (void* ) 0, 10, &gps_task);	
+	    }
+	    else if (io_num == 17){
+		vTaskDelete(gps_task);
+		vTaskDelete(ninedof_task);
+		printf(gps_task);
+	    }
+	}
     }
 }
 
 
-
-void app_main(void)
+void app_main()
 {
-
+	
 
  	gpio_config_t io_conf;
     	//disable pull-down mode
