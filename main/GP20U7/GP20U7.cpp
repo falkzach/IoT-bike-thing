@@ -61,19 +61,20 @@ static void parse_gps_rmc(const char * line) {
 
 // Read gps data from GP-20u7 gps.
 static void read_gps(uint8_t *line) {
-    int size; unsigned int count = 0;
+    int size;
     uint8_t * ptr = line;
-    do {
+    while(1) {
         size = uart_read_bytes(GPS_UART_NUM, ptr, 1, 1000/portMAX_DELAY);
-        printf("%d\n",size);
-        if (*ptr == '\n') {
-            ptr++;
-            *ptr = 0;
-            break;
-        }
-        ptr++;
-        ++count;
-    } while (size > 0 || count > 256);
+        if (size > 0) {
+		if (*ptr == '\n') {
+            		ptr++;
+            		*ptr = 0;
+        		break;
+        	}
+        	
+		ptr++;
+	}
+    }
 }
 
 // init for the GP-20u7 gps
