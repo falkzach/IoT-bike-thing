@@ -18,7 +18,12 @@
 #include "esp_spi_flash.h"
 #include <sys/unistd.h>
 
-#include "LSM9DS1/LSM9DS1.cpp"
+//#include <Wire.h>
+//#include <SPI.h>
+////#include "LSM9DS1/LSM9DS1.cpp"
+//#include "LSM9DS1_Arduino/SparkFunLSM9DS1.h"
+#include "xg.cpp"
+
 #include "GP20U7/GP20U7.cpp"
 #include "MicroSDBreakout/MicroSDBreakout.cpp"
 
@@ -48,16 +53,18 @@ extern "C" void app_main()
 	/*
 	 * init sensors
 	 */
-	init_i2c();
-	LSM9DS1_init();
+//	init_i2c();
+//	LSM9DS1_init();
 	GP20U7_init();
 	sdmmc_card_t* sdcard = init_sdcard();
+
+	xg_setup();
 
 	/*
 	 * register tasks
 	 */
-	xTaskCreate(i2c_task_who_am_i, "LSM9DS1_whoami_task", 1024 * 2, (void* ) 0, 10, NULL);
-	// xTaskCreate(i2c_task_LSM9DS1, "LSM9DS1_task", 1024 * 2, (void* ) 0, 10, NULL);
+//	xTaskCreate(i2c_task_who_am_i, "LSM9DS1_whoami_task", 1024 * 2, (void* ) 0, 10, NULL);
+	 xTaskCreate(xg_task, "LSM9DS1_task", 1024 * 2, (void* ) 0, 10, NULL);
 	xTaskCreate(GP20U7_task, "GPS - GP20U7_task", 1024 * 2, (void* ) 0, 10, NULL);
 
 	unmount_sdcard();
