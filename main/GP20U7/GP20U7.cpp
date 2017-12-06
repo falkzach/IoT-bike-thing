@@ -1,6 +1,7 @@
 #include "driver/uart.h"
 #include "../minmea.h"
 #include "esp_system.h"
+#include "../MicroSDBreakout/MicroSDBreakout.cpp"
 
 // The GP-20u7 unit is only used to recieve data from the satellite.
 #define GPS_TX_ESP_RX GPIO_NUM_16
@@ -12,13 +13,20 @@
 extern xSemaphoreHandle print_mux;
 
 static void parse_gps_rmc(const char * line) {
-
     switch (minmea_sentence_id(line, false)) {
         case MINMEA_SENTENCE_RMC: {
-            struct minmea_sentence_rmc rmc_frame;
+		printf("Printing RMC string\n");
+		struct minmea_sentence_rmc rmc_frame;
             if(minmea_parse_rmc(&rmc_frame, line)) {
-                printf("RMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d\n",rmc_frame.latitude.value,rmc_frame.latitude.scale,rmc_frame.longitude.value,rmc_frame.longitude.scale,rmc_frame.speed.value,rmc_frame.speed.scale);
-            }
+		char result[2048];
+		// sprintf is a string output buffer that formats strings with values from variables.
+		xSemaphoreTake(print_mux, portMAX_DELAY);
+		sprintf(result, "RMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d\n", rmc_frame.latitude.value,rmc_frame.latitude.scale,rmc_frame.longitude.value,rmc_frame.longitude.scale,rmc_frame.speed.value,rmc_frame.speed.scale);
+		xSemaphoreGive(print_mux);
+            	write_line_to_file("/sdcard/GPS_DATA.txt", result);
+            	read_from_file("/sdcard/GPS_DATA.txt");
+		// print_mux = xSemaphoreCreateMutex();
+	    }
             break;
         }
         case MINMEA_SENTENCE_GLL: {
@@ -54,7 +62,7 @@ static void parse_gps_rmc(const char * line) {
             break;
         }
 
-        print_mux = xSemaphoreCreateMutex();
+        xSemaphoreGive(print_mux);
     }
 
 }
@@ -65,7 +73,7 @@ static void read_gps(uint8_t *line) {
     uint8_t * ptr = line;
     do {
         size = uart_read_bytes(GPS_UART_NUM, ptr, 1, 1000/portMAX_DELAY);
-        printf("%d\n",size);
+        // printf("%d\n",size);
         if (*ptr == '\n') {
             ptr++;
             *ptr = 0;
@@ -99,9 +107,9 @@ static void GP20U7_init() {
 static void GP20U7_task(void* arg)
 {
     uint32_t task_idx = (uint32_t) arg;
-    char * rmc_line;
+    char rmc_line[256];
     //TODO: FIXME: http://www.freertos.org/a00111.html mallocs are not advised!
-    rmc_line = (char *)malloc(256);
+    // rmc_line = (char *)malloc(256);
 
     while (1) {
         read_gps((uint8_t *)rmc_line);

@@ -16,10 +16,11 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "esp_spi_flash.h"
-
+#include <sys/unistd.h>
 
 #include "LSM9DS1/LSM9DS1.cpp"
 #include "GP20U7/GP20U7.cpp"
+#include "MicroSDBreakout/MicroSDBreakout.cpp"
 
 
 #define GPIO_INPUT_IO_0 GPIO_NUM_12
@@ -86,6 +87,8 @@ xSemaphoreHandle print_mux;
 extern "C" void app_main()
 {
 	/* Print chip information */
+	print_mux = xSemaphoreCreateMutex();
+		
 	esp_chip_info_t chip_info;
 	esp_chip_info(&chip_info);
 	printf("This is ESP32 chip with %d CPU cores, WiFi%s%s, ",
@@ -97,7 +100,6 @@ extern "C" void app_main()
 
 	printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 		(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
-	print_mux = xSemaphoreCreateMutex();
 
 	gpio_config_t io_conf;
         //disable pull-down mode
@@ -127,7 +129,7 @@ extern "C" void app_main()
         //remove isr handler for gpio number.
         gpio_isr_handler_remove(GPIO_INPUT_IO_0);
         gpio_isr_handler_remove(GPIO_INPUT_IO_1);
-
+  
         //hook isr handler for specific gpio pin again
         gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void*) GPIO_INPUT_IO_0);
         gpio_isr_handler_add(GPIO_INPUT_IO_1, gpio_isr_handler, (void*) GPIO_INPUT_IO_1);		
@@ -138,6 +140,7 @@ extern "C" void app_main()
 	init_i2c();
 	LSM9DS1_init();
 	GP20U7_init();
+	sdmmc_card_t* sdcard = init_sdcard();
 
 	/*
 	 * register tasks
@@ -146,4 +149,6 @@ extern "C" void app_main()
 	// xTaskCreate(i2c_task_LSM9DS1, "LSM9DS1_task", 1024 * 2, (void* ) 0, 10, NULL);
 	//xTaskCreate(GP20U7_task, "GPS - GP20U7_task", 1024 * 2, (void* ) 0, 10, NULL);
 
+	unmount_sdcard();
+	
 }
