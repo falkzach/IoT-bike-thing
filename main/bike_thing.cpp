@@ -80,75 +80,74 @@ const byte wifiLedPin = 14;
 
 void printGyro()
 {
-  // Now we can use the gx, gy, and gz variables as we please.
-  // Either print them as raw ADC values, or calculated in DPS.
-  Serial.print("G: ");
-#ifdef PRINT_CALCULATED
-  // If you want to print calculated values, you can use the
-  // calcGyro helper function to convert a raw ADC value to
-  // DPS. Give the function the value that you want to convert.
-  Serial.print(imu.calcGyro(imu.gx), 2);
-  Serial.print(", ");
-  Serial.print(imu.calcGyro(imu.gy), 2);
-  Serial.print(", ");
-  Serial.print(imu.calcGyro(imu.gz), 2);
-  Serial.println(" deg/s");
-#elif defined PRINT_RAW
-  Serial.print(imu.gx);
-  Serial.print(", ");
-  Serial.print(imu.gy);
-  Serial.print(", ");
-  Serial.println(imu.gz);
-#endif
+	// Now we can use the gx, gy, and gz variables as we please.
+	// Either print them as raw ADC values, or calculated in DPS.
+  	Serial.print("G: ");
+	#ifdef PRINT_CALCULATED
+  		// If you want to print calculated values, you can use the
+  		// calcGyro helper function to convert a raw ADC value to
+  		// DPS. Give the function the value that you want to convert.
+  		Serial.print(imu.calcGyro(imu.gx), 2);
+  		Serial.print(", ");
+  		Serial.print(imu.calcGyro(imu.gy), 2);
+  		Serial.print(", ");
+  		Serial.print(imu.calcGyro(imu.gz), 2);
+  		Serial.println(" deg/s");
+	#elif defined PRINT_RAW
+  		Serial.print(imu.gx);
+  		Serial.print(", ");
+  		Serial.print(imu.gy);
+  		Serial.print(", ");
+  		Serial.println(imu.gz);
+	#endif
 }
 
 void printAccel()
 {
-  // Now we can use the ax, ay, and az variables as we please.
-  // Either print them as raw ADC values, or calculated in g's.
-  Serial.print("A: ");
-#ifdef PRINT_CALCULATED
-  // If you want to print calculated values, you can use the
-  // calcAccel helper function to convert a raw ADC value to
-  // g's. Give the function the value that you want to convert.
-  Serial.print(imu.calcAccel(imu.ax), 2);
-  Serial.print(", ");
-  Serial.print(imu.calcAccel(imu.ay), 2);
-  Serial.print(", ");
-  Serial.print(imu.calcAccel(imu.az), 2);
-  Serial.println(" g");
-#elif defined PRINT_RAW
-  Serial.print(imu.ax);
-  Serial.print(", ");
-  Serial.print(imu.ay);
-  Serial.print(", ");
-  Serial.println(imu.az);
-#endif
-
+  	// Now we can use the ax, ay, and az variables as we please.
+  	// Either print them as raw ADC values, or calculated in g's.	
+	Serial.print("A: ");
+	#ifdef PRINT_CALCULATED
+		// If you want to print calculated values, you can use the
+	  	// calcAccel helper function to convert a raw ADC value to
+  		// g's. Give the function the value that you want to convert.
+  		Serial.print(imu.calcAccel(imu.ax), 2);
+  		Serial.print(", ");
+  		Serial.print(imu.calcAccel(imu.ay), 2);
+  		Serial.print(", ");
+  		Serial.print(imu.calcAccel(imu.az), 2);
+  		Serial.println(" g");
+	#elif defined PRINT_RAW
+  		Serial.print(imu.ax);
+  		Serial.print(", ");
+  		Serial.print(imu.ay);
+  		Serial.print(", ");
+  		Serial.println(imu.az);
+	#endif
 }
 
 void printMag()
 {
-  // Now we can use the mx, my, and mz variables as we please.
-  // Either print them as raw ADC values, or calculated in Gauss.
-  Serial.print("M: ");
-#ifdef PRINT_CALCULATED
-  // If you want to print calculated values, you can use the
-  // calcMag helper function to convert a raw ADC value to
-  // Gauss. Give the function the value that you want to convert.
-  Serial.print(imu.calcMag(imu.mx), 2);
-  Serial.print(", ");
-  Serial.print(imu.calcMag(imu.my), 2);
-  Serial.print(", ");
-  Serial.print(imu.calcMag(imu.mz), 2);
-  Serial.println(" gauss");
-#elif defined PRINT_RAW
-  Serial.print(imu.mx);
-  Serial.print(", ");
-  Serial.print(imu.my);
-  Serial.print(", ");
-  Serial.println(imu.mz);
-#endif
+  	// Now we can use the mx, my, and mz variables as we please.
+  	// Either print them as raw ADC values, or calculated in Gauss.
+  	Serial.print("M: ");
+	#ifdef PRINT_CALCULATED
+  		// If you want to print calculated values, you can use the
+  		// calcMag helper function to convert a raw ADC value to
+  		// Gauss. Give the function the value that you want to convert.
+  		Serial.print(imu.calcMag(imu.mx), 2);
+  		Serial.print(", ");
+  		Serial.print(imu.calcMag(imu.my), 2);
+  		Serial.print(", ");
+  		Serial.print(imu.calcMag(imu.mz), 2);
+  		Serial.println(" gauss");
+	#elif defined PRINT_RAW
+  		Serial.print(imu.mx);
+  		Serial.print(", ");
+  		Serial.print(imu.my);
+  		Serial.print(", ");
+  		Serial.println(imu.mz);
+	#endif
 }
 
 // Calculate pitch, roll, and heading.
@@ -158,195 +157,40 @@ void printMag()
 // http://www51.honeywell.com/aero/common/documents/myaerospacecatalog-documents/Defense_Brochures-documents/Magnetic__Literature_Application_notes-documents/AN203_Compass_Heading_Using_Magnetometers.pdf
 void printAttitude(float ax, float ay, float az, float mx, float my, float mz)
 {
-  float roll = atan2(ay, az);
-  float pitch = atan2(-ax, sqrt(ay * ay + az * az));
+  	float roll = atan2(ay, az);
+  	float pitch = atan2(-ax, sqrt(ay * ay + az * az));
 
-  float heading;
-  if (my == 0)
-    heading = (mx < 0) ? PI : 0;
-  else
-    heading = atan2(mx, my);
+  	float heading;
+  	if (my == 0)
+   		heading = (mx < 0) ? PI : 0;
+  	else
+    		heading = atan2(mx, my);
 
-  heading -= DECLINATION * PI / 180;
+  	heading -= DECLINATION * PI / 180;
 
-  if (heading > PI) heading -= (2 * PI);
-  else if (heading < -PI) heading += (2 * PI);
-  else if (heading < 0) heading += 2 * PI;
+  	if (heading > PI) heading -= (2 * PI);
+  	else if (heading < -PI) heading += (2 * PI);
+  	else if (heading < 0) heading += 2 * PI;
 
-  // Convert everything from radians to degrees:
-  heading *= 180.0 / PI;
-  pitch *= 180.0 / PI;
-  roll  *= 180.0 / PI;
+  	// Convert everything from radians to degrees:
+  	heading *= 180.0 / PI;
+  	pitch *= 180.0 / PI;
+  	roll  *= 180.0 / PI;
 
-  Serial.print("Pitch, Roll: ");
-  Serial.print(pitch, 2);
-  Serial.print(", ");
-  Serial.println(roll, 2);
-  Serial.print("Heading: "); Serial.println(heading, 2);
+  	Serial.print("Pitch, Roll: ");
+  	Serial.print(pitch, 2);
+  	Serial.print(", ");
+  	Serial.println(roll, 2);
+  	Serial.print("Heading: "); Serial.println(heading, 2);
 }
 
 void print_html(WiFiClient client) {
-  const char HTML[] = R"======(
-  <input type="file" id="files" name="files[]" multiple />
-  <div id="floating-panel">
-    <button onclick="toggleKmlLayer()">Toggle KML</button>
-    <button onclick="toggleHeatmap()">Toggle Heatmap</button>
-    <button onclick="changeGradient()">Change gradient</button>
-    <button onclick="changeRadius()">Change radius</button>
-  </div>
-  <div id="map"></div>
-  <div id="lg"></div>)======";
-  client.println(HTML);
+  	const char HTML[] = R"======(<input type="file" id="files" name="files[]" multiple /><div id="floating-panel"><button onclick="toggleKmlLayer()">Toggle KML</button><button onclick="toggleHeatmap()">Toggle Heatmap</button><button onclick="changeGradient()">Change gradient</button><button onclick="changeRadius()">Change radius</button></div><div id="map"></div><div id="lg"></div>)======";
+  	client.println(HTML);
 }
 
 void print_js(WiFiClient client) {
-  const char HTML[] = R"======(
-    <script>
-
-    var map, heatmap, kmlLayer, reader, parser, xmlDoc;
-
-    var heatmapPoints = [];
-
-    parser = new DOMParser();
-
-    function initMap() {
-      map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 13,
-        center: {lat: 46.858574, lng: -114.012864},
-        mapTypeId: 'satellite'
-      });
-
-      heatmap = new google.maps.visualization.HeatmapLayer({
-        data: [],
-        map: map
-      });
-
-      kmlLayer = new google.maps.KmlLayer({
-        url: 'https://sites.google.com/site/kmlrepobikething/kml_files/kootenai_round_2.kml',
-        suppressInfoWindows: true,
-        map: null 
-      });
-
-      kmlLayer.addListener('click', function(kmlEvent) {
-        var text = kmlEvent.featureData.info_window_html;
-        showInContentWindow(text);
-      });
-  
-  console.log(kmlLayer.getMap());
-
-      function showInContentWindow(text) {
-        var sidediv = document.getElementById('lg');
-        sidediv.innerHTML = text;
-      }
-    }
-
-    function toggleHeatmap() {
-      heatmap.setMap(heatmap.getMap() ? null : map);
-    }
-
-    function toggleKmlLayer() {
-
-        kmlLayer.setMap(kmlLayer.getMap() ? null : map);
-
-    }
-
-
-    function changeGradient() {
-      var gradient = [
-        'rgba(0, 255, 255, 0)',
-        'rgba(0, 255, 255, 1)',
-        'rgba(0, 191, 255, 1)',
-        'rgba(0, 127, 255, 1)',
-        'rgba(0, 63, 255, 1)',
-        'rgba(0, 0, 255, 1)',
-        'rgba(0, 0, 223, 1)',
-        'rgba(0, 0, 191, 1)',
-        'rgba(0, 0, 159, 1)',
-        'rgba(0, 0, 127, 1)',
-        'rgba(63, 0, 91, 1)',
-        'rgba(127, 0, 63, 1)',
-        'rgba(191, 0, 31, 1)',
-        'rgba(255, 0, 0, 1)'
-      ]
-      heatmap.set('gradient', heatmap.get('gradient') ? null : gradient);
-    }
-
-    function changeRadius() {
-      heatmap.set('radius', heatmap.get('radius') ? null : 25);
-    }
-
-    function handleFileSelect(evt) {
-      files = evt.target.files;
-
-      // Loop through the FileList
-      for (var i = 0, f; f = files[i]; i++) {
-
-        var reader = new FileReader();
-
-        // Closure to capture the file information.
-        reader.onload = (function(theFile) {
-          return function(e) {
-            // Print the contents of the file
-            var span = document.createElement('span');
-            span.innerHTML = e.target.result;
-            parseKML(span.innerHTML);
-            console.log(span.innerHTML);
-          };
-        })(f);
-
-        reader.readAsText(f);
-      }
-    }
-
-    function parseKML(text) {
-      
-  xmlDoc = parser.parseFromString(text, "text/xml");
-  
-  // find all placemarks
-  var size = xmlDoc.getElementsByTagName("placemark").length;
-  
-  if (size > 0) {
-        
-    var coordinates = xmlDoc.getElementsByTagName("coordinates");
-          
-    if (xmlDoc.getElementsByTagName("extendeddata").length > 0) {
-            
-      var magnitudes = xmlDoc.getElementsByTagName("value");
-              
-      for (var p = 0; p < size; ++p) {
-                
-                  var coor = coordinates[p].childNodes[0].nodeValue.split(',');
-                  var mag = xmlDoc.getElementsByTagName("value")[2*p+1].childNodes[0].nodeValue;
-                
-                  heatmapPoints.push({location: new google.maps.LatLng(coor[1], coor[0]), weight: mag});
-                
-              }
-                
-    } else {
-  
-      coordinates = (coordinates[0].firstChild.nodeValue.replace( /\n/g, " " ).split( " " ));
-  
-      for (var i = 0; i < coordinates.length; ++i) {
-                  
-        coor = coordinates[i].split(',');
-                  
-        if (coor.length > 1) {
-                
-                      heatmapPoints.push(new google.maps.LatLng(coor[1], coor[0]));
-                  }
-              }
-    }
-    
-    heatmap.setData(heatmapPoints);
-        }
-    }
-    
-    document.getElementById('files').addEventListener('change', handleFileSelect, false);
-
-  </script>
-  <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKe8A9vDTluZYfwHZAsJmepp46QJr2gIc&libraries=visualization&callback=initMap">
-  </script>)======";
+  	const char HTML[] = R"======(<script>var map, heatmap, kmlLayer, reader, parser, xmlDoc;var heatmapPoints = [];parser = new DOMParser();function initMap() { map = new google.maps.Map(document.getElementById('map'), {zoom: 13,center: {lat: 46.858574, lng: -114.012864},mapTypeId: 'satellite'}); heatmap = new google.maps.visualization.HeatmapLayer({data: [], map: map }); kmlLayer = new google.maps.KmlLayer({ url: 'https://sites.google.com/site/kmlrepobikething/kml_files/kootenai_round_2.kml', suppressInfoWindows: true, map: null }); kmlLayer.addListener('click', function(kmlEvent) { var text = kmlEvent.featureData.info_window_html; showInContentWindow(text); }); console.log(kmlLayer.getMap()); function showInContentWindow(text) { var sidediv = document.getElementById('lg'); sidediv.innerHTML = text; }}function toggleHeatmap() { heatmap.setMap(heatmap.getMap() ? null : map); } function toggleKmlLayer() { kmlLayer.setMap(kmlLayer.getMap() ? null : map); }function changeGradient() { var gradient = ['rgba(0, 255, 255, 0)','rgba(0, 255, 255, 1)','rgba(0, 191, 255, 1)', 'rgba(0, 127, 255, 1)', 'rgba(0, 63, 255, 1)', 'rgba(0, 0, 255, 1)', 'rgba(0, 0, 223, 1)','rgba(0, 0, 191, 1)', 'rgba(0, 0, 159, 1)', 'rgba(0, 0, 127, 1)', 'rgba(63, 0, 91, 1)', 'rgba(127, 0, 63, 1)', 'rgba(191, 0, 31, 1)', 'rgba(255, 0, 0, 1)' ] heatmap.set('gradient', heatmap.get('gradient') ? null : gradient); } function changeRadius() { heatmap.set('radius', heatmap.get('radius') ? null : 25); } function handleFileSelect(evt) { files = evt.target.files; for (var i = 0, f; f = files[i]; i++) { var reader = new FileReader(); reader.onload = (function(theFile) { return function(e) { var span = document.createElement('span'); span.innerHTML = e.target.result; parseKML(span.innerHTML); console.log(span.innerHTML); }; })(f); reader.readAsText(f); } } function parseKML(text) { xmlDoc = parser.parseFromString(text, "text/xml"); var size = xmlDoc.getElementsByTagName("placemark").length; if (size > 0) { var coordinates = xmlDoc.getElementsByTagName("coordinates"); if (xmlDoc.getElementsByTagName("extendeddata").length > 0) { var magnitudes = xmlDoc.getElementsByTagName("value"); for (var p = 0; p < size; ++p) { var coor = coordinates[p].childNodes[0].nodeValue.split(','); var mag = xmlDoc.getElementsByTagName("value")[2*p+1].childNodes[0].nodeValue; heatmapPoints.push({location: new google.maps.LatLng(coor[1], coor[0]), weight: mag}); } } else { coordinates = (coordinates[0].firstChild.nodeValue.replace( /\n/g, " " ).split( " " )); for (var i = 0; i < coordinates.length; ++i) { coor = coordinates[i].split(','); if (coor.length > 1) { heatmapPoints.push(new google.maps.LatLng(coor[1], coor[0])); } } }heatmap.setData(heatmapPoints); } } document.getElementById('files').addEventListener('change', handleFileSelect, false); </script> <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKe8A9vDTluZYfwHZAsJmepp46QJr2gIc&libraries=visualization&callback=initMap"> </script>)======";
 client.println(HTML);
 }
 
@@ -388,7 +232,7 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
 void createDir(fs::FS &fs, const char * path){
     Serial.printf("Creating Dir: %s\n", path);
     if(fs.mkdir(path)){
-        Serial.println("Dir created");
+    	Serial.println("Dir created");
     } else {
         Serial.println("mkdir failed");
     }
@@ -713,10 +557,6 @@ void run_sensors() {
 	
 	if (flat <= 90.0 && flat >= -90.0) {
 		if(flon <=180 && flon >=-180) {
-			// valid coordinate blink green led momentarily
-			digitalWrite(wifiLedPin,HIGH);
-			delay(500);
-			digitalWrite(wifiLedPin,LOW);
 
 			sprintf(coordinates, "%f,%f\n",flat,flon);
 			Serial.println(coordinates);
@@ -727,32 +567,32 @@ void run_sensors() {
 				// To read from the gyroscope,  first call the
 				// readGyro() function. When it exits, it'll update the
 				// gx, gy, and gz variables with the most current data.
-				imu.readGyro();
+				//imu.readGyro();
 			}
 			if ( imu.accelAvailable() ) {
 				// To read from the accelerometer, first call the
 				// readAccel() function. When it exits, it'll update the
 				// ax, ay, and az variables with the most current data.
-				imu.readAccel();
+				//imu.readAccel();
 			}
 			if ( imu.magAvailable() ) {
 				// To read from the magnetometer, first call the
 				// readMag() function. When it exits, it'll update the
 				// mx, my, and mz variables with the most current data.
-				imu.readMag();
+				//imu.readMag();
 			}
 	
 			if ((lastPrint + PRINT_SPEED) < millis()) {
-				printGyro();  // Print "G: gx, gy, gz"
-				printAccel(); // Print "A: ax, ay, az"
-				printMag();   // Print "M: mx, my, mz"
+				//printGyro();  // Print "G: gx, gy, gz"
+				//printAccel(); // Print "A: ax, ay, az"
+				//printMag();   // Print "M: mx, my, mz"
 				// Print the heading and orientation for fun!
 				// Call print attitude. The LSM9DS1's mag x and y
 				// axes are opposite to the accelerometer, so my, mx are
 				// substituted for each other.
-				printAttitude(imu.ax, imu.ay, imu.az,
-	        		    -imu.my, -imu.mx, imu.mz);
-				Serial.println();
+				//printAttitude(imu.ax, imu.ay, imu.az,
+	        		//    -imu.my, -imu.mx, imu.mz);
+				//Serial.println();
 	
 				lastPrint = millis(); // Update lastPrint time
 			}
@@ -764,8 +604,11 @@ void run_sensors() {
 static void smartdelay(unsigned long ms) {
 	unsigned long start = millis();
 	do {
-		while (gps_serial.available())
-			gps.encode(gps_serial.read());
+		while (gps_serial.available()) {
+			char c = gps_serial.read();
+			Serial.print(c);
+			gps.encode(c);
+		}
 	} while (millis() - start < ms);
 }
 
