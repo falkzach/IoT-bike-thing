@@ -363,22 +363,22 @@ void blink_on_led() {
 }
 
 void recordInterrupt() {
-  portENTER_CRITICAL_ISR(&mux);
+  	portENTER_CRITICAL_ISR(&mux);
   
-  if(wifiMode || recording)
-	  recording = 0;
-  else
-	  recording = 1;
+	if(wifiMode || recording)
+		  recording = 0;
+  	else
+		  recording = 1;
   
-  portEXIT_CRITICAL_ISR(&mux);
+  	portEXIT_CRITICAL_ISR(&mux);
 }
 void wifiInterrupt() {
-  portENTER_CRITICAL_ISR(&mux);
-  if(recording || wifiMode)
-	  wifiMode = 0;
-  else 
-	  wifiMode = 1;
-  portEXIT_CRITICAL_ISR(&mux);
+	portENTER_CRITICAL_ISR(&mux);
+  	if(recording || wifiMode)
+	  	wifiMode = 0;
+  	else 
+	  	wifiMode = 1;
+  	portEXIT_CRITICAL_ISR(&mux);
 }
 void setup(){
 	// set up leds
@@ -391,7 +391,9 @@ void setup(){
 	pinMode(wifiLedPin, OUTPUT);
 	digitalWrite(wifiLedPin, LOW);	
 	// set up serial ports
-    	Serial.begin(115200);
+    	Serial.end();
+	Serial.flush();
+	Serial.begin(9600);
 	gps_serial.begin(9600);
 
 	pinMode(recordPin, INPUT_PULLUP);
@@ -605,8 +607,9 @@ static void smartdelay(unsigned long ms) {
 	unsigned long start = millis();
 	do {
 		while (gps_serial.available()) {
-			char c = gps_serial.read();
+			const char c = gps_serial.read();
 			Serial.print(c);
+			appendFile(SD, "/data/gps_data.txt",&c);
 			gps.encode(c);
 		}
 	} while (millis() - start < ms);
