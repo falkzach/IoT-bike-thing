@@ -41,16 +41,19 @@
 
 LSM9DS1 imu;
 
-
-
 HardwareSerial gps_serial(2);
-//SoftwareSerial gps_serial(16,17);
 
 TinyGPS gps;
 
 bool recording=0, wifiMode=0;
 
 static void smartdelay(unsigned long ms);
+
+void readFile(fs::FS &fs, const char * path, const char * to_path);
+void writeFile(fs::FS &fs, const char * path, const char * message);
+void appendFile(fs::FS &fs, const char * path, const char * message);
+void createDir(fs::FS &fs, const char * path);
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels);
 
 // Replace with your network credentials
 const char* ssid     = "AndroidAP";
@@ -78,76 +81,44 @@ const byte onLedPin = 26;
 const byte recordLedPin = 27;
 const byte wifiLedPin = 14;
 
-void printGyro()
-{
-	// Now we can use the gx, gy, and gz variables as we please.
-	// Either print them as raw ADC values, or calculated in DPS.
+void printGyro() {
   	Serial.print("G: ");
-	#ifdef PRINT_CALCULATED
-  		// If you want to print calculated values, you can use the
-  		// calcGyro helper function to convert a raw ADC value to
-  		// DPS. Give the function the value that you want to convert.
-  		Serial.print(imu.calcGyro(imu.gx), 2);
-  		Serial.print(", ");
-  		Serial.print(imu.calcGyro(imu.gy), 2);
-  		Serial.print(", ");
-  		Serial.print(imu.calcGyro(imu.gz), 2);
-  		Serial.println(" deg/s");
-	#elif defined PRINT_RAW
-  		Serial.print(imu.gx);
-  		Serial.print(", ");
-  		Serial.print(imu.gy);
-  		Serial.print(", ");
-  		Serial.println(imu.gz);
-	#endif
+	// If you want to print calculated values, you can use the
+  	// calcGyro helper function to convert a raw ADC value to
+  	// DPS. Give the function the value that you want to convert.
+  	Serial.print(imu.calcGyro(imu.gx), 2);
+  	Serial.print(", ");
+  	Serial.print(imu.calcGyro(imu.gy), 2);
+  	Serial.print(", ");
+  	Serial.print(imu.calcGyro(imu.gz), 2);
+  	Serial.println(" deg/s");
 }
 
-void printAccel()
-{
-  	// Now we can use the ax, ay, and az variables as we please.
-  	// Either print them as raw ADC values, or calculated in g's.	
+void printAccel() {
 	Serial.print("A: ");
-	#ifdef PRINT_CALCULATED
-		// If you want to print calculated values, you can use the
-	  	// calcAccel helper function to convert a raw ADC value to
-  		// g's. Give the function the value that you want to convert.
-  		Serial.print(imu.calcAccel(imu.ax), 2);
-  		Serial.print(", ");
-  		Serial.print(imu.calcAccel(imu.ay), 2);
-  		Serial.print(", ");
-  		Serial.print(imu.calcAccel(imu.az), 2);
-  		Serial.println(" g");
-	#elif defined PRINT_RAW
-  		Serial.print(imu.ax);
-  		Serial.print(", ");
-  		Serial.print(imu.ay);
-  		Serial.print(", ");
-  		Serial.println(imu.az);
-	#endif
+	// If you want to print calculated values, you can use the
+  	// calcAccel helper function to convert a raw ADC value to
+	// g's. Give the function the value that you want to convert.
+  	Serial.print(imu.calcAccel(imu.ax), 2);
+  	Serial.print(", ");
+  	Serial.print(imu.calcAccel(imu.ay), 2);
+  	Serial.print(", ");
+  	Serial.print(imu.calcAccel(imu.az), 2);
+  	Serial.println(" g");
 }
 
-void printMag()
-{
+void printMag() {
   	// Now we can use the mx, my, and mz variables as we please.
-  	// Either print them as raw ADC values, or calculated in Gauss.
   	Serial.print("M: ");
-	#ifdef PRINT_CALCULATED
-  		// If you want to print calculated values, you can use the
-  		// calcMag helper function to convert a raw ADC value to
-  		// Gauss. Give the function the value that you want to convert.
-  		Serial.print(imu.calcMag(imu.mx), 2);
-  		Serial.print(", ");
-  		Serial.print(imu.calcMag(imu.my), 2);
-  		Serial.print(", ");
-  		Serial.print(imu.calcMag(imu.mz), 2);
-  		Serial.println(" gauss");
-	#elif defined PRINT_RAW
-  		Serial.print(imu.mx);
-  		Serial.print(", ");
-  		Serial.print(imu.my);
-  		Serial.print(", ");
-  		Serial.println(imu.mz);
-	#endif
+	// If you want to print calculated values, you can use the
+	// calcMag helper function to convert a raw ADC value to
+	// Gauss. Give the function the value that you want to convert.
+	Serial.print(imu.calcMag(imu.mx), 2);
+	Serial.print(", ");
+	Serial.print(imu.calcMag(imu.my), 2);
+	Serial.print(", ");
+	Serial.print(imu.calcMag(imu.mz), 2);
+	Serial.println(" gauss");
 }
 
 // Calculate pitch, roll, and heading.
@@ -155,8 +126,7 @@ void printMag()
 // http://cache.freescale.com/files/sensors/doc/app_note/AN3461.pdf?fpsp=1
 // Heading calculations taken from this app note:
 // http://www51.honeywell.com/aero/common/documents/myaerospacecatalog-documents/Defense_Brochures-documents/Magnetic__Literature_Application_notes-documents/AN203_Compass_Heading_Using_Magnetometers.pdf
-void printAttitude(float ax, float ay, float az, float mx, float my, float mz)
-{
+void printAttitude(float ax, float ay, float az, float mx, float my, float mz) {
   	float roll = atan2(ay, az);
   	float pitch = atan2(-ax, sqrt(ay * ay + az * az));
 
@@ -191,168 +161,60 @@ void print_html(WiFiClient client) {
 
 void print_js(WiFiClient client) {
   	const char HTML[] = R"======(<script>var map, heatmap, kmlLayer, reader, parser, xmlDoc;var heatmapPoints = [];parser = new DOMParser();function initMap() { map = new google.maps.Map(document.getElementById('map'), {zoom: 13,center: {lat: 46.858574, lng: -114.012864},mapTypeId: 'satellite'}); heatmap = new google.maps.visualization.HeatmapLayer({data: [], map: map }); kmlLayer = new google.maps.KmlLayer({ url: 'https://sites.google.com/site/kmlrepobikething/kml_files/kootenai_round_2.kml', suppressInfoWindows: true, map: null }); kmlLayer.addListener('click', function(kmlEvent) { var text = kmlEvent.featureData.info_window_html; showInContentWindow(text); }); console.log(kmlLayer.getMap()); function showInContentWindow(text) { var sidediv = document.getElementById('lg'); sidediv.innerHTML = text; }}function toggleHeatmap() { heatmap.setMap(heatmap.getMap() ? null : map); } function toggleKmlLayer() { kmlLayer.setMap(kmlLayer.getMap() ? null : map); }function changeGradient() { var gradient = ['rgba(0, 255, 255, 0)','rgba(0, 255, 255, 1)','rgba(0, 191, 255, 1)', 'rgba(0, 127, 255, 1)', 'rgba(0, 63, 255, 1)', 'rgba(0, 0, 255, 1)', 'rgba(0, 0, 223, 1)','rgba(0, 0, 191, 1)', 'rgba(0, 0, 159, 1)', 'rgba(0, 0, 127, 1)', 'rgba(63, 0, 91, 1)', 'rgba(127, 0, 63, 1)', 'rgba(191, 0, 31, 1)', 'rgba(255, 0, 0, 1)' ] heatmap.set('gradient', heatmap.get('gradient') ? null : gradient); } function changeRadius() { heatmap.set('radius', heatmap.get('radius') ? null : 25); } function handleFileSelect(evt) { files = evt.target.files; for (var i = 0, f; f = files[i]; i++) { var reader = new FileReader(); reader.onload = (function(theFile) { return function(e) { var span = document.createElement('span'); span.innerHTML = e.target.result; parseKML(span.innerHTML); console.log(span.innerHTML); }; })(f); reader.readAsText(f); } } function parseKML(text) { xmlDoc = parser.parseFromString(text, "text/xml"); var size = xmlDoc.getElementsByTagName("placemark").length; if (size > 0) { var coordinates = xmlDoc.getElementsByTagName("coordinates"); if (xmlDoc.getElementsByTagName("extendeddata").length > 0) { var magnitudes = xmlDoc.getElementsByTagName("value"); for (var p = 0; p < size; ++p) { var coor = coordinates[p].childNodes[0].nodeValue.split(','); var mag = xmlDoc.getElementsByTagName("value")[2*p+1].childNodes[0].nodeValue; heatmapPoints.push({location: new google.maps.LatLng(coor[1], coor[0]), weight: mag}); } } else { coordinates = (coordinates[0].firstChild.nodeValue.replace( /\n/g, " " ).split( " " )); for (var i = 0; i < coordinates.length; ++i) { coor = coordinates[i].split(','); if (coor.length > 1) { heatmapPoints.push(new google.maps.LatLng(coor[1], coor[0])); } } }heatmap.setData(heatmapPoints); } } document.getElementById('files').addEventListener('change', handleFileSelect, false); </script> <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKe8A9vDTluZYfwHZAsJmepp46QJr2gIc&libraries=visualization&callback=initMap"> </script>)======";
-client.println(HTML);
+	client.println(HTML);
 }
 
-void build_kml() {
-
+void build_kml_header() {
+	const char KML[] = R"======(<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gx="http://www.google.com/kml/ext/2.2"><Document><visibility>1</visibility><open>1</open><Style id="track"><LineStyle><color>7f0000ff</color><width>4</width></LineStyle></Style><Style id="start"><IconStyle><scale>1.3</scale><Icon><href>http://maps.google.com/mapfiles/kml/paddle/grn-circle.png</href></Icon><hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/></IconStyle></Style><Style id="end"><IconStyle><scale>1.3</scale><Icon><href>http://maps.google.com/mapfiles/kml/paddle/red-circle.png</href></Icon><hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/></IconStyle></Style><Style id="statistics"><IconStyle><scale>1.3</scale><Icon><href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href></Icon><hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/></IconStyle></Style><Style id="waypoint"><IconStyle><scale>1.3</scale><Icon><href>http://maps.google.com/mapfiles/kml/pushpin/blue-pushpin.png</href></Icon><hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/></IconStyle></Style><Schema id="schema"></Schema><Folder><name></name></Folder><Placemark><name><![CDATA[06241208]]></name><Style id="trackStyle1"> <LineStyle>  <color>ff000066</color>  </LineStyle></Style><LineString><coordinates>)======";
+	writeFile(SD,"/HTML/BIKERIDE.KML", KML);
 }
 
-void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
-    Serial.printf("Listing directory: %s\n", dirname);
-
-    File root = fs.open(dirname);
-    if(!root){
-        Serial.println("Failed to open directory");
-        return;
-    }
-    if(!root.isDirectory()){
-        Serial.println("Not a directory");
-        return;
-    }
-
-    File file = root.openNextFile();
-    while(file){
-        if(file.isDirectory()){
-            Serial.print("  DIR : ");
-            Serial.println(file.name());
-            if(levels){
-                listDir(fs, file.name(), levels -1);
-            }
-        } else {
-            Serial.print("  FILE: ");
-            Serial.print(file.name());
-            Serial.print("  SIZE: ");
-            Serial.println(file.size());
-        }
-        file = root.openNextFile();
-    }
+void build_kml_footer() {
+	const char KML[] = R"======(</coordinates></LineString></Placemark></Document></kml>)======";
+	appendFile(SD, "/HTML/BIKERIDE.KML", KML);
 }
 
-void createDir(fs::FS &fs, const char * path){
-    Serial.printf("Creating Dir: %s\n", path);
-    if(fs.mkdir(path)){
-    	Serial.println("Dir created");
-    } else {
-        Serial.println("mkdir failed");
-    }
-}
+void readFile(fs::FS &fs, const char * path, const char * to_path){
+    	Serial.printf("Reading file: %s\n", path);
 
-void removeDir(fs::FS &fs, const char * path){
-    Serial.printf("Removing Dir: %s\n", path);
-    if(fs.rmdir(path)){
-        Serial.println("Dir removed");
-    } else {
-        Serial.println("rmdir failed");
-    }
-}
+    	File file = fs.open(path);
+    	if(!file){
+        	Serial.println("Failed to open file for reading");
+		return;
+    	}
 
-void readFile(fs::FS &fs, const char * path){
-    Serial.printf("Reading file: %s\n", path);
-
-    File file = fs.open(path);
-    if(!file){
-        Serial.println("Failed to open file for reading");
-        return;
-    }
-
-    Serial.print("Read from file: ");
-    while(file.available()){
-        Serial.write(file.read());
-    }
-    file.close();
+    	Serial.print("Read from file: ");
+    	
+	while(file.available()) {
+		const char c = file.read();
+		appendFile(SD, to_path, &c);
+	}
+    	file.close();
 }
 
 void writeFile(fs::FS &fs, const char * path, const char * message){
-    Serial.printf("Writing file: %s\n", path);
-
-    File file = fs.open(path, FILE_WRITE);
-    if(!file){
-        Serial.println("Failed to open file for writing");
-        return;
-    }
-    if(file.print(message)){
-        Serial.println("File written");
-    } else {
-        Serial.println("Write failed");
-    }
-    file.close();
+	
+    	File file = fs.open(path, FILE_WRITE);
+    	if(!file){
+        	return;
+    	}
+    	if(file.print(message)){
+    		Serial.println("File written");
+    	} else {
+    		Serial.println("Write failed");
+    	}
+    	file.close();
 }
 
 void appendFile(fs::FS &fs, const char * path, const char * message){
-    Serial.printf("Appending to file: %s\n", path);
 
-    File file = fs.open(path, FILE_APPEND);
-    if(!file){
-        Serial.println("Failed to open file for appending");
-        return;
-    }
-    if(file.print(message)){
-        Serial.println("Message appended");
-    } else {
-        Serial.println("Append failed");
-    }
-    file.close();
-}
-
-void renameFile(fs::FS &fs, const char * path1, const char * path2){
-    Serial.printf("Renaming file %s to %s\n", path1, path2);
-    if (fs.rename(path1, path2)) {
-        Serial.println("File renamed");
-    } else {
-        Serial.println("Rename failed");
-    }
-}
-
-void deleteFile(fs::FS &fs, const char * path){
-    Serial.printf("Deleting file: %s\n", path);
-    if(fs.remove(path)){
-        Serial.println("File deleted");
-    } else {
-        Serial.println("Delete failed");
-    }
-}
-
-void testFileIO(fs::FS &fs, const char * path){
-    File file = fs.open(path);
-    static uint8_t buf[512];
-    size_t len = 0;
-    uint32_t start = millis();
-    uint32_t end = start;
-    if(file){
-        len = file.size();
-        size_t flen = len;
-        start = millis();
-        while(len){
-            size_t toRead = len;
-            if(toRead > 512){
-                toRead = 512;
-            }
-            file.read(buf, toRead);
-            len -= toRead;
-        }
-        end = millis() - start;
-        Serial.printf("%u bytes read for %u ms\n", flen, end);
-        file.close();
-    } else {
-        Serial.println("Failed to open file for reading");
-    }
-
-
-    file = fs.open(path, FILE_WRITE);
-    if(!file){
-        Serial.println("Failed to open file for writing");
-        return;
-    }
-
-    size_t i;
-    start = millis();
-    for(i=0; i<2048; i++){
-        file.write(buf, 512);
-    }
-    end = millis() - start;
-    Serial.printf("%u bytes written for %u ms\n", 2048 * 512, end);
-    file.close();
+    	File file = fs.open(path, FILE_APPEND);
+    	if(!file){
+    	    	Serial.println("Failed to open file for appending");
+    	    	return;
+    	}
+    	file.print(message);
+    	file.close();
 }
 
 void blink_on_led() {
@@ -363,15 +225,14 @@ void blink_on_led() {
 }
 
 void recordInterrupt() {
-  	portENTER_CRITICAL_ISR(&mux);
-  
+  	portENTER_CRITICAL_ISR(&mux); 
 	if(wifiMode || recording)
 		  recording = 0;
   	else
 		  recording = 1;
-  
   	portEXIT_CRITICAL_ISR(&mux);
 }
+
 void wifiInterrupt() {
 	portENTER_CRITICAL_ISR(&mux);
   	if(recording || wifiMode)
@@ -380,6 +241,7 @@ void wifiInterrupt() {
 	  	wifiMode = 1;
   	portEXIT_CRITICAL_ISR(&mux);
 }
+
 void setup(){
 	// set up leds
 	pinMode(onLedPin, OUTPUT);
@@ -391,9 +253,9 @@ void setup(){
 	pinMode(wifiLedPin, OUTPUT);
 	digitalWrite(wifiLedPin, LOW);	
 	// set up serial ports
-    	Serial.end();
-	Serial.flush();
-	Serial.begin(9600);
+    	//Serial.end();
+	//Serial.flush();
+	Serial.begin(115200);
 	gps_serial.begin(9600);
 
 	pinMode(recordPin, INPUT_PULLUP);
@@ -402,30 +264,18 @@ void setup(){
 	attachInterrupt(digitalPinToInterrupt(wifiModePin), wifiInterrupt, FALLING);
 
 
-      	// Before initializing the IMU, there are a few settings
-  	// we may need to adjust. Use the settings struct to set
-  	// the device's communication mode and addresses:
   	imu.settings.device.commInterface = IMU_MODE_I2C;
   	imu.settings.device.mAddress = LSM9DS1_M;
   	imu.settings.device.agAddress = LSM9DS1_AG;
-  	// The above lines will only take effect AFTER calling
-  	// imu.begin(), which verifies communication with the IMU
-  	// and turns it on.
-  	if (!imu.begin())
-  	{
-  		Serial.println("Failed to communicate with LSM9DS1.");
-    		Serial.println("Double-check wiring.");
-    		Serial.println("Default settings in this sketch will " \
-                  "work for an out of the box LSM9DS1 " \
-                  "Breakout, but may need to be modified " \
-                  "if the board jumpers are.");
+  	
+	if (!imu.begin()) {
     		while(!imu.begin()) {
 			blink_on_led();
 		}
 		//return;
   	}
 
-    	if(!SD.begin(5)){
+    	if(!SD.begin(5)) {
         	Serial.println("Card Mount Failed");
 		while(!SD.begin(5)) {
 			blink_on_led();
@@ -434,40 +284,15 @@ void setup(){
 	}
     	uint8_t cardType = SD.cardType();
 
-    	if(cardType == CARD_NONE){
+    	if(cardType == CARD_NONE) {
     		Serial.println("No SD card attached");
-        	while (cardType == CARD_NONE){
+        	while (cardType == CARD_NONE) {
 			blink_on_led();
 		}
 		//return;
     	}
+	build_kml_header();
 
-    	Serial.print("SD Card Type: ");
-    	if(cardType == CARD_MMC){
-        	Serial.println("MMC");
-    	} else if(cardType == CARD_SD){
-        	Serial.println("SDSC");
-    	} else if(cardType == CARD_SDHC){
-        	Serial.println("SDHC");
-    	} else {
-        	Serial.println("UNKNOWN");
-    	}
-
-    	uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-    	Serial.printf("SD Card Size: %lluMB\n", cardSize);
-
-    	createDir(SD, "/html");
-    	createDir(SD, "/data");
-    	listDir(SD, "/", 0);
-    	// TODO change how the file is written in case there are two files, or always append to a single file if it is there.
-
-    	writeFile(SD, "/data/gps_data.txt", "GPS HEADER\n");
-    	// deleteFile(SD, "/foo.txt");
-    	// renameFile(SD, "/hello.txt", "/foo.txt");
-    	// readFile(SD, "/foo.txt");
-    	//testFileIO(SD, "/test.txt");
-    	Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
-    	Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
 }
 
 void setup_wifi() {
@@ -562,7 +387,7 @@ void run_sensors() {
 
 			sprintf(coordinates, "%f,%f\n",flat,flon);
 			Serial.println(coordinates);
-			appendFile(SD, "/data/gps_data.txt",coordinates);
+			appendFile(SD, "/html/bikeride.kml",coordinates);
 	
 			// Update the sensor values whenever new data is available
 			if ( imu.gyroAvailable() ) {
@@ -628,8 +453,8 @@ void loop(){
 	if(wifiMode) {
 		digitalWrite(wifiLedPin,HIGH);
 		// build Kml once, then loop until wifi is stopped
+		build_kml_footer();
 		setup_wifi();
-		build_kml();
 		//TODO put wifi code here
 		while(wifiMode) {
 			digitalWrite(wifiLedPin, HIGH);
